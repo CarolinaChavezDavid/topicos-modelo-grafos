@@ -71,6 +71,8 @@ def login(form_data: OAuth2PasswordRequestForm = Depends()):
         raise HTTPException(status_code=401, detail="Invalid username or password")
     return {"access_token": user.username, "token_type": "bearer"}
 
+
+
 @app.get("/protected-premium")
 def protected_premium_route(current_user: User = Depends(get_current_premium_user)):
     return {"message": f"Welcome, premium user {current_user.username}!"}

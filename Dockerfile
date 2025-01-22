@@ -1,25 +1,17 @@
-############################################################
-# Dockerfile to run Memcached Containers
-# Based on Ubuntu Image
-############################################################
+FROM python:3.11-slim
 
-# Set the base image to use to Ubuntu
-FROM ubuntu
+# Set working directory
+WORKDIR /app
 
-# Update the default application repository sources list
-RUN apt-get update
+# Install dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Install Memcached
-RUN apt-get install -y memcached
+# Copy app code
+COPY ./app /app
 
-# Port to expose (default: 11211)
-EXPOSE 11211
+# Expose FastAPI port
+EXPOSE 8000
 
-# Default Memcached run command arguments
-CMD ["-m", "128"]
-
-# Set the user to run Memcached daemon
-USER daemon
-
-# Set the entrypoint to memcached binary
-ENTRYPOINT memcached
+# Command to run the application
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

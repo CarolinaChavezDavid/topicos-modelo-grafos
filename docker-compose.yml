@@ -1,0 +1,21 @@
+services:
+  memcached:
+    image: memcached:latest
+    container_name: memcached
+    ports:
+      - "11211:11211"
+    command: memcached -m 64 
+    restart: always
+
+  app:
+    build: .
+    container_name: fastapi-app
+    ports:
+      - "8000:8000"
+    depends_on:
+      - memcached
+    # volumes: - ./app:/app
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    environment:
+      MEMCACHED_HOST: memcached
+      MEMCACHED_PORT: 11211
