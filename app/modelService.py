@@ -1,11 +1,16 @@
-from pykeen.pipeline import pipeline
 from pykeen.triples import TriplesFactory
+from fastapi import HTTPException
 import pandas as pd
 import torch
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+logger = logging.getLogger(__name__)
 
 # File paths
-MODEL_PATH = "app/model_service/trained_model.pkl"
-TRIPLES_FILE = "app/model_service/dataset_train.tsv.gz"
+MODEL_PATH = "app/model/trained_model.pkl"
+TRIPLES_FILE = "app/model/dataset_train.tsv.gz"
 
 # Global variables
 heads_id = []
@@ -40,6 +45,8 @@ def load_model() -> None:
     # Prepare batch tensor
     hr_batch = torch.tensor(list(zip(heads_id, relations_id)))
 
+def clear_cache() -> None:
+    torch.cuda.empty_cache()
 
 def is_valid_id(head: str) -> bool:
     """Checks if the given head ID exists in the dataset."""
@@ -52,9 +59,12 @@ def is_valid_id(head: str) -> bool:
 
 def find_similars(head: int) -> list[int]:
      """Finds the 10 most similar elements for a given head ID."""
+     logger.info(f"find_similars called with head ID: {head}")
+     logger.info(f"Available head IDs: {heads_id}")
      if head not in heads_id:
-        raise ValueError(f"El inmueble con id {head} no se encuentra registrado.")
-     
+        error_msg = "El inmueble con id {head} no se encuentra registrado."
+        raise  HTTPException(status_code=400, detail= error_msg)
+ 
      # Prepare tensor sample
      sample = [[head, 5]]
 
