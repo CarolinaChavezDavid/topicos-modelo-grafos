@@ -4,7 +4,6 @@ import logging
 import json
 import time
 
-# Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
@@ -28,7 +27,7 @@ def log_request(
         "request_processing_time": round(total_time, 4),
     }
 
-    logger.info(f"logsss entry: {log_entry}")
+    logger.info(f"logsss entry log service: {log_entry}")
 
     log_key = f"log:{api_key}:{int(time.time())}"
     try:
@@ -52,7 +51,6 @@ def get_memechached_logs(api_key: str) -> list:
     logs = []
     keys_list_key = f"keys:{api_key}"
     
-    # Retrieve stored log keys
     stored_keys = memcached_client.get(keys_list_key)
     logger.info(f"stores keys: {stored_keys}")
 
