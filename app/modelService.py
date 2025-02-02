@@ -1,12 +1,8 @@
 from pykeen.triples import TriplesFactory
 from fastapi import HTTPException
+from app.logService import logger
 import pandas as pd
 import torch
-import logging
-
-# Configure logging
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
-logger = logging.getLogger(__name__)
 
 # File paths
 MODEL_PATH = "app/model/trained_model.pkl"
@@ -23,7 +19,7 @@ def load_model() -> None:
     global model, heads_id, relations_id, hr_batch  # Declare global variables
 
     # Load the trained model
-    model = torch.load(MODEL_PATH, map_location=torch.device('cpu'))
+    model = torch.load(MODEL_PATH, map_location=torch.device('cpu'), weights_only=False)
     
     # Load triples factory
     triples_factory = TriplesFactory.from_path(TRIPLES_FILE, create_inverse_triples=True)
@@ -59,10 +55,11 @@ def is_valid_id(head: str) -> bool:
 
 def find_similars(head: int) -> list[int]:
      """Finds the 10 most similar elements for a given head ID."""
+
      logger.info(f"find_similars called with head ID: {head}")
-     logger.info(f"Available head IDs: {heads_id}")
+     
      if head not in heads_id:
-        error_msg = "El inmueble con id {head} no se encuentra registrado."
+        error_msg = f"El inmueble con id {head} no se encuentra registrado."
         raise  HTTPException(status_code=400, detail= error_msg)
  
      # Prepare tensor sample
@@ -80,6 +77,6 @@ def find_similars(head: int) -> list[int]:
     
      # Map back to original `heads_id`
      selected_elements = [heads_id[i] for i in ids]
-
+     logger.info(f"Similar head ids: {selected_elements}")
      return selected_elements
 

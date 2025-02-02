@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
-# MongoDB Setup
+# MongoDB Setup for users
 MONGO_URI = os.getenv("MONGO_URI", "mongodb://mongo:27017/")
 mongo_client = pymongo.MongoClient(MONGO_URI)
 db = mongo_client["auth_db"]

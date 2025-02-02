@@ -6,3 +6,6 @@ torch
 pymemcache
 python-dotenv
 pykeen
+aioredis
+redis
+fastapi-limiter

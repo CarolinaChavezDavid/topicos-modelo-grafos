@@ -7,10 +7,12 @@ services:
     depends_on:
       - mongo
       - memcached
+      - redis
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     environment:
       - MONGO_URI=mongodb://mongo:27017/
       - MEMCACHED_HOST=memcached
+      - REDIS_HOST=redis 
 
   mongo:
     image: mongo
@@ -23,3 +25,10 @@ services:
     container_name: memcached-logs
     ports:
       - "11211:11211"
+
+  redis:
+      image: redis:latest
+      container_name: redis-cache
+      ports:
+        - "6379:6379"
+      restart: always
