@@ -1,18 +1,49 @@
 services:
-  app:
-    build: .
-    container_name: fastapi-app
+  auth_service:
+    build: ./auth-service
+    container_name: auth-service
     ports:
-      - "8000:8000"
+      - "8001:8000"
     depends_on:
       - mongo
-      - memcached
       - redis
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     environment:
       - MONGO_URI=mongodb://mongo:27017/
-      - MEMCACHED_HOST=memcached
       - REDIS_HOST=redis 
+  
+  model_service:
+    build: ./model-service
+    container_name: model-service
+    ports:
+      - "8002:8000"
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  log_service:
+    build: ./log-service
+    container_name: log-service
+    ports:
+      - "8003:8000"
+    depends_on:
+      - memcached
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    environment:
+      - MEMCACHED_HOST=memcached
+
+  api-gateway:
+    build: ./api-gateway
+    container_name: api-gateway
+    ports:
+      - "8000:8000"
+    depends_on:
+      - auth_service
+      - model_service
+      - log_service
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    environment:
+    - AUTH_SERVICE_URL=http://auth-service:8000
+    - MODEL_SERVICE_URL=http://model-service:8000
+    - LOG_SERVICE_URL=http://log-service:8000
 
   mongo:
     image: mongo
