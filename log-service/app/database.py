@@ -1,5 +1,4 @@
 import os
-import pymongo
 import pymemcache
 from dotenv import load_dotenv
 

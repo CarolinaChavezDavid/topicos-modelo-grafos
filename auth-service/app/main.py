@@ -2,9 +2,11 @@ from fastapi import FastAPI, HTTPException, Request, status
 from pydantic import BaseModel
 from app.database import users_collection, redis_client
 from datetime import datetime
-import redis
-import os
 import secrets
+import logging
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
@@ -53,10 +55,11 @@ async def rate_limit_middleware(request: Request):
     redis_key = f"{api_key}:{current_minute}"
     
     request_count = redis_client.incr(redis_key)
+    logger.info(f"Redis count: {request_count}")
     if request_count == 1:
         redis_client.expire(redis_key, 60)
     
     if request_count > RATE_LIMITS[user_type]:
-        raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail="Rate limit exceeded")
+        raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail="Número de requests excedidos.")
 
     return {"allowed": True}
