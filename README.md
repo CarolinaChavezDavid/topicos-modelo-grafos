@@ -1,64 +1,33 @@
 # topicos-modelo-grafos
+Este proyecto es una aplicación basada en microservicios que utiliza un modelo de aprendizaje automático (ML) basado en grafos de conocimiento. El sistema está diseñado para devolver una lista con los IDs de 10 grafos que representan inmueblese similares dado un `head_id` (un identificador único de una propiedad). La arquitectura está construida utilizando FastAPI para los servicios de backend, Docker para la contenedorización y Docker Compose para la orquestación.
+
+El proyecto está dividido en múltiples microservicios, cada uno manejando una funcionalidad específica:
+
+* **API Gateway:** Actúa como el punto de entrada para todas las solicitudes de los clientes y las dirige a los microservicios correspondientes.
+* **Authentication Service:** Maneja la autenticación de usuarios y la limitación de solicitudes.
+* **Model Service**: Aloja el modelo de ML y proporciona recomendaciones de propiedades basadas en el `head_id`.
+* **Logging Service:** Registra todas las solicitudes y respuestas para monitoreo y depuración.
+
+* **Base de Datos:** Utiliza MongoDB para los datos de usuario y Redis para almacenamiento en caché y limitación de tasa.
+
+  ### Estructura del proyecto
+
 
 ## Project set up
-1. Install FastAPI $ pip install "fastapi[standard]"
-2. Memcached set up
+Como prerequisitios se debe tener instalado Docker y Docker compose.
 
-TOPICOS-MODELO-GRAFOS/
-│── app/
-│   │── __init__.py
-│   │── main.py             # Punto de entrada para FastAPI
-│   │── authService.py      # Maneja la Autenticación
-│   │── modelService.py   # ML Model API
-│   │── logService.py       # Loggea los request del usuario
-│   │── database.py         # MongoDB and Memcached setup
-│   │── models.py           # Pydantic models
-│── .env
-│── requirements.txt
-│── Dockerfile
-│── docker-compose.yml
+1. Clonar o descargar el proyecto  
+2. Ejecutar el comando:
+```
+docker-compose up --build
+```
+> En caso de error al ejecutar el comando revisar los logs de los servicios y revisar que los puertos utilizados en los servicios descritos en el docker-compose.yml esten disponibles
 
-
-TOPICOS-MODELO-GRAFOS/
-│── auth-service/
-│   │── app/
-│   │   │── main.py
-│   │   │── auth.py
-│   │   │── models.py
-│   │── Dockerfile
-│── model-service/
-│   │── app/
-│   │   │── main.py
-│   │   │── model.py
-│   │   │── models.py
-│   │── Dockerfile
-│── log-service/
-│   │── app/
-│   │   │── main.py
-│   │   │── logger.py
-│   │── Dockerfile
-│── api-gateway/
-│   │── app/
-│   │   │── main.py
-│   │   │── routes.py
-│   │── Dockerfile
-│── db-service/
-│   │── docker-compose.yml  # MongoDB and Memcached setup
-│── docker-compose.yml
-│── .env
-
-
+# API Getaway
+La razon principal  de utilizar  este servicio es que los clientes interactuen unicamente con este, centralizando la logica y ayudando a la escalabilidad ya que cualquier nuevo servicio o reques que se agregue puede ser facilmente registrado (log) validado(authorization) y limitado(rate Limited), este es el encargado de enviar el los requests a los demas servicies
 # Service model
 En este servicio se crea una funcion que carga el modelo y prepara las variables necesarias para procesar los request y entregar la lista con los ID's de los inmuebles similares. Se hace uso de LifeSpan Events de FastAPI para cargar el modelo cuando solo cuando se incia la aplicacion.
 
-2. Registering Through the api-gateway
-In this approach, clients interact only with the api-gateway (http://api-gateway:8000/register/), which forwards the request to the auth-service. This is the recommended approach in a microservices architecture.
+# Result 
 
-Pros:
-Single entry point: Clients interact only with the api-gateway, which simplifies client-side logic.
-
-Centralized logic: You can add additional validation, logging, or transformations in the api-gateway before forwarding the request.
-
-Security: Internal services like auth-service are not exposed directly to clients.
-
-Scalability: You can easily add rate limiting, caching, or load balancing at the api-gateway level.
+![topicos2](https://github.com/user-attachments/assets/bf5c2f56-9306-4f98-bc4f-9037ce7bf784)
