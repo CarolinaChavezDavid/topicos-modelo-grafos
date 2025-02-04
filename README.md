@@ -29,11 +29,37 @@ docker-compose up --build
 El `API Gateway`  es un microservicio basado en FastAPI-based que funciona como punto central para manejar las solicitudes de los usuarios. La razon principal  de utilizar  este servicio es que los clientes interactuen unicamente con este, centralizando la logica y ayudando a la escalabilidad ya que cualquier nuevo servicio o reques que se agregue puede ser facilmente registrado (log) validado(authorization) y limitado(rate Limited), este es el encargado de enviar el los requests a los demas servicies.
 El **API Gateway** con tres mircroservicios la comunicación entre estos serivicios se da usand  HTTP con `httpx.AsyncClient` que ayuda que los request no  sean bloqueantes. Además, aunque cada servicio maneja los posibles errores generando mensajes especificos para posibles casos, este servicio agrega una capa extra para manejar el error en caso de exista algun error de conexión con el servidor
 
-  * **Workflow**
-1. **Health Check** La api cuenta con un serivcio que retorna  un mensaje de exito, ayuda a determinar que el proyecto se ejecuto de manera correcta.
+* **Workflow**
+ 1. **Health Check** La api cuenta con un endpoint (getTestAPI en la colección de Postman) que retorna un mensaje de éxito, ayuda a determinar que el proyecto se ejecuto de manera correcta.
   * Endpoint :`http://localhost:8000`
   * Response:
-1. **Registro de usuario** 
+```
+{
+    "message": "API Gateway esta funcionando!"
+}
+```
+ 2. **Registro de usuario** Los usuarios antes de realizar una petición para obtener el resultado del modelo de grafos debe registrarse con el endpoint de registro (userRegistration en la colección de Postman) y así obtener una `api_key` única que es obligatoria para poder hacer request al modelo y  revisar los logs. En el body del request deberá asignarse un nombre de usuario `username` y un tipo de cuenta `acount_type` de tipo **FREEPREMIUM** o **PREMIUM**
+* Endpoint: `http://localhost:8000/register/`
+* Body: 
+```
+{
+    "username": "CaroTest",
+    "account_type": "FREEMIUM"
+}
+```
+
+* Response: 
+    
+```
+{
+    "message": "Usuario registrado exitosamente.",
+    "api_key": "05cf974aefd7da50eca33ccd891ae06edf4ccd9f7718a83552a70e5947cfb44d"
+}
+```
+
+![userRegister](https://github.com/user-attachments/assets/835b47ae-1126-4ff8-a407-cba1cae5c259)
+
+
 Rate Limiting Check
 
 Before processing a request, the API Gateway checks the rate limit by calling the Authentication Service:
