@@ -4,3 +4,4 @@ pydantic
 torch
 python-dotenv
 pykeen
+redis

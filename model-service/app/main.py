@@ -1,6 +1,9 @@
 from pykeen.triples import TriplesFactory
-from fastapi import FastAPI, HTTPException, Depends, Request
+from fastapi import FastAPI, HTTPException
+from app.database import redis_client
 from contextlib import asynccontextmanager
+from datetime import timedelta
+import json
 import logging
 import pandas as pd
 import torch
@@ -68,7 +71,15 @@ def get_similars(head_id: int):
     if head_id not in heads_id:
         error_msg = f"El inmueble con id {head_id} no se encuentra registrado."
         raise  HTTPException(status_code=400, detail= error_msg)
- 
+    
+    # Check if the result is already cached
+    cache_key = f"similar_properties:{head_id}"
+    cached_result = redis_client.get(cache_key)
+
+    if cached_result:
+        logger.info(f"Cache hit for head ID: {head_id}")
+        return json.loads(cached_result)
+
     # Prepare tensor sample
     sample = [[head_id, 5]]
 
@@ -85,4 +96,7 @@ def get_similars(head_id: int):
     # Map back to original `heads_id`
     selected_elements = [heads_id[i] for i in ids]
     logger.info(f"Similar head ids: {selected_elements}")
+
+    redis_client.set(cache_key, json.dumps(selected_elements), ex=timedelta(hours=1))  # Cache for 1 hour
+
     return selected_elements
