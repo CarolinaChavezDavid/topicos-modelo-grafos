@@ -26,9 +26,61 @@ docker-compose up --build
 > En caso de error al ejecutar el comando revisar los logs de los servicios y revisar que los puertos utilizados en los servicios descritos en el docker-compose.yml esten disponibles
 
 # API Getaway
-La razon principal  de utilizar  este servicio es que los clientes interactuen unicamente con este, centralizando la logica y ayudando a la escalabilidad ya que cualquier nuevo servicio o reques que se agregue puede ser facilmente registrado (log) validado(authorization) y limitado(rate Limited), este es el encargado de enviar el los requests a los demas servicies
+El `API Gateway`  es un microservicio basado en FastAPI-based que funciona como punto central para manejar las solicitudes de los usuarios. La razon principal  de utilizar  este servicio es que los clientes interactuen unicamente con este, centralizando la logica y ayudando a la escalabilidad ya que cualquier nuevo servicio o reques que se agregue puede ser facilmente registrado (log) validado(authorization) y limitado(rate Limited), este es el encargado de enviar el los requests a los demas servicies.
+El **API Gateway** con tres mircroservicios la comunicación entre estos serivicios se da usand  HTTP con `httpx.AsyncClient` que ayuda que los request no  sean bloqueantes. Además, aunque cada servicio maneja los posibles errores generando mensajes especificos para posibles casos, este servicio agrega una capa extra para manejar el error en caso de exista algun error de conexión con el servidor
+
+  * **Workflow**
+1. **Health Check** La api cuenta con un serivcio que retorna  un mensaje de exito, ayuda a determinar que el proyecto se ejecuto de manera correcta.
+  * Endpoint :`http://localhost:8000`
+  * Response:
+1. **Registro de usuario** 
+Rate Limiting Check
+
+Before processing a request, the API Gateway checks the rate limit by calling the Authentication Service:
+
+Sends the request headers to /rate-limit-check.
+
+If allowed, proceeds; otherwise, returns a 429 Too Many Requests response.
+
+2. Processing Requests
+
+User Registration (POST /register/)
+
+Forwards user registration data to the Authentication Service.
+
+Returns the response from the Authentication Service to the client.
+
+Finding Similar Properties (POST /similars/{head_id})
+
+Validates the request and applies rate limiting.
+
+Calls the Model Service to retrieve similar properties.
+
+Logs the request to the Log Service.
+
+Returns the list of similar properties to the client.
+
+Fetching Logs (GET /logs/)
+
+Forwards the request to the Log Service.
+
+Returns stored logs to the client.
+
+3. Logging Requests
+
+After processing each request, the API Gateway logs details such as:
+
+API Key
+
+Endpoint accessed
+
+Timestamps (start & end)
+
+Processing time
+These logs are sent to the Log Service for storage.
+
 # model-service 
-El `model-service` es un microservicio basado en FastAPI que aloja un modelo de aprendizaje automático (ML) `trained_model.pkl` para encontrar propiedades similares entre grafos que representan inmuebles. Utiliza PyKeen, una biblioteca de Python para incrustaciones de gráficos de conocimiento, para cargar y procesar el modelo ML. El servicio también integra Redis para almacenar en caché los resultados y mejorar el rendimiento.
+El `model-service` es un microservicio que aloja un modelo de aprendizaje automático (ML) `trained_model.pkl` para encontrar propiedades similares entre grafos que representan inmuebles. Utiliza PyKeen, una biblioteca de Python para incrustaciones de gráficos de conocimiento, para cargar y procesar el modelo ML. El servicio también integra Redis para almacenar en caché los resultados y mejorar el rendimiento.
 El servicio comienza  inicializando la aplicación FastAPI. Utiliza el **lifespan manager** de  FastAPI, un administrador de vida útil, para cargar el modelo ML cuando se inicia el servicio `load_model()` preparando así las listas necesarias para posteriormente ejecutar la lógica que entregara al API getway la lista de los 10 IDs de los grafos similares. Por último borrar el caché cuando se cierra el servicio.
 
 * `load_model()`:
@@ -47,6 +99,10 @@ El servicio comienza  inicializando la aplicación FastAPI. Utiliza el **lifespa
   7. Se seleccionan los 10 índices principales y se asignan a los `heads_id`` originales.
   8. El resultado se guarda en Redis con un tiempo de expiración de 1 hora.
   9. Se devuelve la lista de propiedades similares al cliente.
+ 
+  # auth-service
+  # log-service
+El `log-service` es un microservicio responsable de registrar las solicitudes de los usuarios y almacenarlas en Memcached, un sistema de almacenamiento en caché de memoria distribuida de alto rendimiento. El servicio registra detalles como la clave de API, el endpoint, las marcas de tiempo y los tiempos de procesamiento de cada solicitud. Además, proporciona un endpoint para recuperar los registros de un usuario específico.
 
 # Result 
 
