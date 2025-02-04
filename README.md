@@ -10,7 +10,9 @@ El proyecto está dividido en múltiples microservicios, cada uno manejando una 
 
 * **Base de Datos:** Utiliza MongoDB para los datos de usuario y Redis para almacenamiento en caché y limitación de tasa.
 
-  ### Estructura del proyecto
+### Estructura del proyecto
+
+![topicos2 drawio (1)](https://github.com/user-attachments/assets/fd0b0b37-8228-4b5c-abed-68bd08cf851c)
 
 
 ## Project set up
