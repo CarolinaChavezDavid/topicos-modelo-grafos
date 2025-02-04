@@ -27,8 +27,26 @@ docker-compose up --build
 
 # API Getaway
 La razon principal  de utilizar  este servicio es que los clientes interactuen unicamente con este, centralizando la logica y ayudando a la escalabilidad ya que cualquier nuevo servicio o reques que se agregue puede ser facilmente registrado (log) validado(authorization) y limitado(rate Limited), este es el encargado de enviar el los requests a los demas servicies
-# Service model
-En este servicio se crea una funcion que carga el modelo y prepara las variables necesarias para procesar los request y entregar la lista con los ID's de los inmuebles similares. Se hace uso de LifeSpan Events de FastAPI para cargar el modelo cuando solo cuando se incia la aplicacion.
+# model-service 
+El `model-service` es un microservicio basado en FastAPI que aloja un modelo de aprendizaje automático (ML) `trained_model.pkl` para encontrar propiedades similares entre grafos que representan inmuebles. Utiliza PyKeen, una biblioteca de Python para incrustaciones de gráficos de conocimiento, para cargar y procesar el modelo ML. El servicio también integra Redis para almacenar en caché los resultados y mejorar el rendimiento.
+El servicio comienza  inicializando la aplicación FastAPI. Utiliza el **lifespan manager** de  FastAPI, un administrador de vida útil, para cargar el modelo ML cuando se inicia el servicio `load_model()` preparando así las listas necesarias para posteriormente ejecutar la lógica que entregara al API getway la lista de los 10 IDs de los grafos similares. Por último borrar el caché cuando se cierra el servicio.
+
+* `load_model()`:
+  1. El modelo preentrenado se carga desde el archivo serializado `trained_model.pkl` utilizando PyTorch.
+  2. Se utiliza TriplesFactory de PyKeen para cargar los datos del grafo de conocimiento desde el archivo `dataset_train.tsv.gz`.
+  3. El conjunto de datos se lee en un DataFrame de Pandas. Se filtran entidades y se extraen los IDs de entidades y relaciones, y se almacenan en variables globales `heads_id` y `relations_id`.
+  4. Se crea el tensor `hr_batch` emparejando los IDs de entidades con los IDs de relaciones.
+    
+* `find_similars()`:
+  1. Se verifica que el `head_id` exista en la lista `heads_id`. Si no se encuentra, se devuelve un error.
+  2. El servicio comprueba si el resultado para el `head_id` ya está almacenado en Redis. Si el resultado está en cache, se devuelve inmediatamente.
+  3. Si el resultado no está en cache, de lo contrario continua la ejecución.
+  4. Se prepara una muestra de tensor para el `head_id` dado.
+  5. El modelo calcula puntuaciones para todas las entidades en el grafo de conocimiento.
+  6. Las puntuaciones se emparejan con sus índices y se ordenan.
+  7. Se seleccionan los 10 índices principales y se asignan a los `heads_id`` originales.
+  8. El resultado se guarda en Redis con un tiempo de expiración de 1 hora.
+  9. Se devuelve la lista de propiedades similares al cliente.
 
 # Result 
 
