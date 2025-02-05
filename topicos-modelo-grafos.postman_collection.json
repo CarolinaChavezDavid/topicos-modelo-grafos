@@ -1,0 +1,125 @@
+{
+	"info": {
+		"_postman_id": "3d32012f-b12d-47fb-a758-e669dec32f8e",
+		"name": "topicos-modelo-grafos",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "27249426",
+		"_collection_link": "https://cloudy-capsule-99776.postman.co/workspace/Team-Workspace~1899ec8f-24d7-4ca6-8daa-0eff5d03605e/collection/27249426-3d32012f-b12d-47fb-a758-e669dec32f8e?action=share&source=collection_link&creator=27249426"
+	},
+	"item": [
+		{
+			"name": "getTestAPI",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8000",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"query": [
+						{
+							"key": "",
+							"value": "",
+							"disabled": true
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "userRegistration",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"username\": \"CaroTest\",\n    \"account_type\": \"FREEMIUM\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8000/register/",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"register",
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "getSimilars",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "123124212541",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "http://127.0.0.1:8000/similars/12334",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8000",
+					"path": [
+						"similars",
+						"12334"
+					],
+					"query": [
+						{
+							"key": "",
+							"value": null,
+							"disabled": true
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "getLogs",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "05cf974aefd7da50eca33ccd891ae06edf4ccd9f7718a83552a70e5947cfb44d",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "http://localhost:8000/logs/",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"logs",
+						""
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
