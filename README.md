@@ -5,15 +5,16 @@ El proyecto está dividido en múltiples microservicios, cada uno manejando una 
 
 * **API Gateway:** Actúa como el punto de entrada para todas las solicitudes de los clientes y las dirige a los microservicios correspondientes.
 * **Authentication Service:** Maneja la autenticación de usuarios y la limitación de solicitudes.
-* **Model Service**: Aloja el modelo de ML y proporciona recomendaciones de propiedades basadas en el `head_id`.
-* **Logging Service:** Registra todas las solicitudes y respuestas para monitoreo y depuración.
+* **Model Service**: Aloja el modelo de ML y proporciona la lista de inmuebles similares basadas en el `head_id`.
+* **Logging Service:** Registra todas las solicitudes con sus tiempos de procesamiento.
 
-* **Base de Datos:** Utiliza MongoDB para los datos de usuario y Redis para almacenamiento en caché y limitación de tasa.
+* **Base de Datos:** Utiliza MongoDB para los datos de usuario y Redis para almacenamiento en cache de las respuestas del modelo y limitación de tasa. Por último Memcached fue utilizado para guardar en cache los logs.
 
 ### Estructura del proyecto
 
 ![topicos2 drawio (1)](https://github.com/user-attachments/assets/fd0b0b37-8228-4b5c-abed-68bd08cf851c)
 
+Los servicios utilizados se establecieron por funcionalidad la cual que esta dada por el dominio del problema. Por otro lado las diversas bases de datos o sistemas de almacenamiento fueron elegidos para poner en practica su implementación ya que un solo sistema de almacenamiento se podría utilizar para toda la aplicación.
 
 ## Project set up
 Como prerequisitios se debe tener instalado Docker y Docker compose.
@@ -23,24 +24,26 @@ Como prerequisitios se debe tener instalado Docker y Docker compose.
 ```
 docker-compose up --build
 ```
-> En caso de error al ejecutar el comando revisar los logs de los servicios y revisar que los puertos utilizados en los servicios descritos en el docker-compose.yml esten disponibles
+> En caso de error al ejecutar el comando revisar los logs de los servicios y revisar que los puertos utilizados en los servicios descritos en el docker-compose.yml esten disponibles.
 
 # API Getaway
 El `API Gateway`  es un microservicio basado en FastAPI-based que funciona como punto central para manejar las solicitudes de los usuarios. La razon principal  de utilizar  este servicio es que los clientes interactuen unicamente con este, centralizando la logica y ayudando a la escalabilidad ya que cualquier nuevo servicio o reques que se agregue puede ser facilmente registrado (log) validado(authorization) y limitado(rate Limited), este es el encargado de enviar el los requests a los demas servicies.
 El **API Gateway** con tres mircroservicios la comunicación entre estos serivicios se da usand  HTTP con `httpx.AsyncClient` que ayuda que los request no  sean bloqueantes. Además, aunque cada servicio maneja los posibles errores generando mensajes especificos para posibles casos, este servicio agrega una capa extra para manejar el error en caso de exista algun error de conexión con el servidor
 
-* **Workflow**
- 1. **Health Check** La api cuenta con un endpoint (getTestAPI en la colección de Postman) que retorna un mensaje de éxito, ayuda a determinar que el proyecto se ejecuto de manera correcta.
-  * Endpoint :`http://localhost:8000`
-  * Response:
+## Workflow
+ ### 1. Health Check 
+La api cuenta con un endpoint (getTestAPI en la colección de Postman) que retorna un mensaje de éxito, ayuda a determinar que el proyecto se ejecuto de manera correcta.
+  * **Endpoint:** `http://localhost:8000`
+  * **Response:**
 ```
 {
     "message": "API Gateway esta funcionando!"
 }
 ```
- 2. **Registro de usuario** Los usuarios antes de realizar una petición para obtener el resultado del modelo de grafos debe registrarse con el endpoint de registro (userRegistration en la colección de Postman) y así obtener una `api_key` única que es obligatoria para poder hacer request al modelo y  revisar los logs. En el body del request deberá asignarse un nombre de usuario `username` y un tipo de cuenta `acount_type` de tipo **FREEPREMIUM** o **PREMIUM**
-* Endpoint: `http://localhost:8000/register/`
-* Body: 
+ ### 2. Registro de usuario
+Los usuarios antes de realizar una petición para obtener el resultado del modelo de grafos debe registrarse con el endpoint de registro (userRegistration en la colección de Postman) y así obtener una `api_key` única que es obligatoria para poder hacer request al modelo y  revisar los logs. En el body del request deberá asignarse un nombre de usuario `username` y un tipo de cuenta `acount_type` de tipo **FREEPREMIUM** o **PREMIUM**
+ * **Endpoint:** `http://localhost:8000/register/`
+ * **Body:**
 ```
 {
     "username": "CaroTest",
@@ -48,7 +51,7 @@ El **API Gateway** con tres mircroservicios la comunicación entre estos serivic
 }
 ```
 
-* Response: 
+ * **Response:**
     
 ```
 {
@@ -59,71 +62,78 @@ El **API Gateway** con tres mircroservicios la comunicación entre estos serivic
 
 ![userRegister](https://github.com/user-attachments/assets/835b47ae-1126-4ff8-a407-cba1cae5c259)
 
-3. **Consultar al modelo de grafos** La API permite realizar peticiones al modelo de machine learning a través del endpoint que se comunica con el `model-service` (getSimilars en la colección de Postman).  
- * **Requisitos para la Solicitud**  
+ ## 3. **Consultar al modelo de grafos** 
+ La API permite realizar peticiones al modelo de machine learning a través del endpoint que se comunica con el `model-service` (getSimilars en la colección de Postman).  
+### Requisitos para la Solicitud  
 Para realizar una solicitud, es necesario:  
 - Incluir la **`api_key`** en el encabezado, dentro del parámetro `Authorization`, obtenida durante el registro.  
 - Proporcionar el **`head_id`** del grafo del cual se desean obtener los 10 IDs de los grafos más similares, según el procesamiento del modelo.  
 
-* **Funcionamiento Interno del API Gateway**
- 1. **Validación de la API Key**  
-   - El API Gateway valida con el `auth-service` si la clave proporcionada en el encabezado existe en la base de datos (MongoDB).  
- 2. **Verificación del Límite de Peticiones**  
-   - Según el **`account_type`** del usuario asociado a la `api_key` entregada, se determina la cantidad de solicitudes permitidas por minuto:  
-     - **FREEMIUM**: 5 peticiones por minuto.  
-     - **PREMIUM**: 50 peticiones por minuto.  
-   - Para este control, se utiliza **Redis**, donde se registra el número de solicitudes realizadas en un minuto.  
- 3. **Procesamiento de la Solicitud**  
-   - Si el usuario cumple con los requisitos anteriores, el **API Gateway** reenvía la petición al **`model_service`**, que procesa la solicitud y devuelve el resultado.  
-4. **Manejo de Errores**  
-   - Durante cada etapa del proceso, se implementa un adecuado manejo de errores.  
-   - En caso de fallos, se proporcionan respuestas claras indicando la causa del error.  
+### Funcionamiento Interno del API Gateway
+   1. **Validación de la API Key**  
+    - El API Gateway valida con el `auth-service` si la clave proporcionada en el encabezado existe en la base de datos (MongoDB).  
+   2. **Verificación del Límite de Peticiones**  
+    - Según el **`account_type`** del usuario asociado a la `api_key` entregada, se determina la cantidad de solicitudes permitidas por minuto:  
+      - **FREEMIUM**: 5 peticiones por minuto.  
+      - **PREMIUM**: 50 peticiones por minuto.  
+    - Para este control, se utiliza **Redis**, donde se registra el número de solicitudes realizadas en un minuto.  
+   3. **Procesamiento de la Solicitud**  
+    - Si el usuario cumple con los requisitos anteriores, el **API Gateway** reenvía la petición al **`model_service`**, que procesa la solicitud y devuelve el resultado.  
+  4. **Manejo de Errores**  
+    - Durante cada etapa del proceso, se implementa un adecuado manejo de errores.  
+    - En caso de fallos, se proporcionan respuestas claras indicando la causa del error.
 
+ * **Endpoint:** `http://localhost:8000/similars/{head_id}` (ej: [334785, 252582, 301978, 304516, 327025, 280052, 309811, 294461])
+ * **Header:** key:`Authorization`,  value:`api_key`
 
-Rate Limiting Check
+ * **Response:**
+```
+{
+    "head_id": 326006,
+    "similar_items": [
+        384323,
+        326006,
+        359277,
+        333006,
+        298159,
+        345471,
+        335972,
+        267264,
+        306843,
+        401661
+    ]
+}
+```
 
-Before processing a request, the API Gateway checks the rate limit by calling the Authentication Service:
+![modelRequest](https://github.com/user-attachments/assets/0fee34ba-1bf1-41ae-9e10-7efd2226e55f)
 
-Sends the request headers to /rate-limit-check.
+### 4. Consulta de logs
+Para revisar los logs de las solicitudes, se dispone de un endpoint en el API Gateway (`getLogs` en la colección de Postman).  
+Para realizar la consulta, se debe incluir la **`api_key`** en el header del request. Como respuesta, se entregará una lista con los registros de las solicitudes asociadas a esa clave.  
+Los logs se obtienen a partir de la información almacenada en **Memcached** por el `log-service`, y estarán disponibles durante una hora.  
+ * **Endpoint:** `http://localhost:8000/logs/`
+ * **Header:** key:`Authorization`,  value:`api_key`
+ * **Response:**
+```
+[
+    {
+        "api_key": "05cf974aefd7da50eca33ccd891ae06edf4ccd9f7718a83552a70e5947cfb44d",
+        "endpoint": "/similars/326006",
+        "timestamp": "2025-02-05T00:32:32.906074",
+        "model_processing_time": 4.263,
+        "request_processing_time": 4.263
+    },
+    {
+        "api_key": "05cf974aefd7da50eca33ccd891ae06edf4ccd9f7718a83552a70e5947cfb44d",
+        "endpoint": "/similars/326006",
+        "timestamp": "2025-02-05T00:32:34.685314",
+        "model_processing_time": 0.0385,
+        "request_processing_time": 0.0385
+    }
+]
 
-If allowed, proceeds; otherwise, returns a 429 Too Many Requests response.
-
-2. Processing Requests
-
-User Registration (POST /register/)
-
-Forwards user registration data to the Authentication Service.
-
-Returns the response from the Authentication Service to the client.
-
-Finding Similar Properties (POST /similars/{head_id})
-
-Validates the request and applies rate limiting.
-
-Calls the Model Service to retrieve similar properties.
-
-Logs the request to the Log Service.
-
-Returns the list of similar properties to the client.
-
-Fetching Logs (GET /logs/)
-
-Forwards the request to the Log Service.
-
-Returns stored logs to the client.
-
-3. Logging Requests
-
-After processing each request, the API Gateway logs details such as:
-
-API Key
-
-Endpoint accessed
-
-Timestamps (start & end)
-
-Processing time
-These logs are sent to the Log Service for storage.
+```
+>  En este ejemplo se logra ver la diferencia en el tiempo de procesamiento de los request del mismo modelo, ya que la primera vez que se consulta un las similaridades de un grafo la respuesta es almacenada, por consiguiente la segunda que vez que se consulta se trae la informcación almacenada en cache.
 
 # model-service 
 El `model-service` es un microservicio que aloja un modelo de aprendizaje automático (ML) `trained_model.pkl` para encontrar propiedades similares entre grafos que representan inmuebles. Utiliza PyKeen, una biblioteca de Python para incrustaciones de gráficos de conocimiento, para cargar y procesar el modelo ML. El servicio también integra Redis para almacenar en caché los resultados y mejorar el rendimiento.
