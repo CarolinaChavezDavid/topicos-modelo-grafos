@@ -59,6 +59,26 @@ El **API Gateway** con tres mircroservicios la comunicación entre estos serivic
 
 ![userRegister](https://github.com/user-attachments/assets/835b47ae-1126-4ff8-a407-cba1cae5c259)
 
+3. **Consultar al modelo de grafos** La API permite realizar peticiones al modelo de machine learning a través del endpoint que se comunica con el `model-service` (getSimilars en la colección de Postman).  
+ * **Requisitos para la Solicitud**  
+Para realizar una solicitud, es necesario:  
+- Incluir la **`api_key`** en el encabezado, dentro del parámetro `Authorization`, obtenida durante el registro.  
+- Proporcionar el **`head_id`** del grafo del cual se desean obtener los 10 IDs de los grafos más similares, según el procesamiento del modelo.  
+
+* **Funcionamiento Interno del API Gateway**
+ 1. **Validación de la API Key**  
+   - El API Gateway valida con el `auth-service` si la clave proporcionada en el encabezado existe en la base de datos (MongoDB).  
+ 2. **Verificación del Límite de Peticiones**  
+   - Según el **`account_type`** del usuario asociado a la `api_key` entregada, se determina la cantidad de solicitudes permitidas por minuto:  
+     - **FREEMIUM**: 5 peticiones por minuto.  
+     - **PREMIUM**: 50 peticiones por minuto.  
+   - Para este control, se utiliza **Redis**, donde se registra el número de solicitudes realizadas en un minuto.  
+ 3. **Procesamiento de la Solicitud**  
+   - Si el usuario cumple con los requisitos anteriores, el **API Gateway** reenvía la petición al **`model_service`**, que procesa la solicitud y devuelve el resultado.  
+4. **Manejo de Errores**  
+   - Durante cada etapa del proceso, se implementa un adecuado manejo de errores.  
+   - En caso de fallos, se proporcionan respuestas claras indicando la causa del error.  
+
 
 Rate Limiting Check
 
